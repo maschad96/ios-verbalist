@@ -180,15 +180,15 @@ stateDiagram-v2
     }
     
     note right of Committed
-        - Tasks appear instantly in UI
-        - CloudKit syncs to other devices
-        - Success feedback shown
+        Tasks appear instantly in UI
+        CloudKit syncs to other devices
+        Success feedback shown
     end note
     
     note right of Error
-        - Clear error message
-        - Tap to dismiss
-        - Graceful recovery
+        Clear error message
+        Tap to dismiss
+        Graceful recovery
     end note
 ```
 
