@@ -19,21 +19,12 @@ struct WaveformView: View {
                     RoundedRectangle(cornerRadius: 3)
                         .fill(color)
                         .frame(width: 3, height: max(geometry.size.height * CGFloat(sample), 3))
-                        .opacity(animating ? opacityFor(index: index) : 1)
-                        .animation(
-                            animating ? Animation.easeInOut(duration: 0.5).repeatForever().delay(Double(index) * 0.05) : .default,
-                            value: animating
-                        )
+                        .animation(.easeInOut(duration: 0.1), value: sample)
                 }
             }
             .frame(maxHeight: .infinity)
             .frame(height: geometry.size.height)
         }
-    }
-    
-    private func opacityFor(index: Int) -> Double {
-        let normalizedIndex = Double(index) / Double(max(1, samples.count - 1))
-        return 0.5 + 0.5 * sin(normalizedIndex * 2 * .pi)
     }
 }
 

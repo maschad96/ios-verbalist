@@ -16,7 +16,9 @@ class AudioRecorder: NSObject, ObservableObject, AVAudioRecorderDelegate {
     
     private var audioRecorder: AVAudioRecorder?
     private var timer: Timer?
+    #if os(iOS)
     private var recordingSession: AVAudioSession?
+    #endif
     
     override init() {
         super.init()
@@ -24,6 +26,7 @@ class AudioRecorder: NSObject, ObservableObject, AVAudioRecorderDelegate {
     }
     
     private func setupSession() {
+        #if os(iOS)
         recordingSession = AVAudioSession.sharedInstance()
         
         do {
@@ -32,6 +35,7 @@ class AudioRecorder: NSObject, ObservableObject, AVAudioRecorderDelegate {
         } catch {
             print("Failed to set up recording session: \(error.localizedDescription)")
         }
+        #endif
     }
     
     func requestPermission() async -> Bool {
@@ -70,24 +74,34 @@ class AudioRecorder: NSObject, ObservableObject, AVAudioRecorderDelegate {
             recordingURL = audioFilename
             soundSamples = []
             
-            // Start monitoring audio levels
-            self.timer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
+            // Start monitoring audio levels with higher frequency for smoother animation
+            self.timer = Timer.scheduledTimer(withTimeInterval: 0.05, repeats: true) { [weak self] _ in
                 guard let self = self, let recorder = self.audioRecorder, recorder.isRecording else { return }
                 
                 recorder.updateMeters()
-                let power = recorder.averagePower(forChannel: 0)
-                let normalizedPower = self.normalizeSoundLevel(level: power)
+                let avgPower = recorder.averagePower(forChannel: 0)
+                let peakPower = recorder.peakPower(forChannel: 0)
+                
+                // Use a combination of average and peak for more dynamic visualization
+                let combinedPower = (avgPower * 0.7) + (peakPower * 0.3)
+                let normalizedPower = self.normalizeSoundLevel(level: combinedPower)
+                
+                // Apply some smoothing to reduce jitter
+                let smoothedPower: Float
+                if let lastSample = self.soundSamples.last {
+                    smoothedPower = lastSample * 0.3 + normalizedPower * 0.7
+                } else {
+                    smoothedPower = normalizedPower
+                }
                 
                 // Add to samples array
-                self.soundSamples.append(normalizedPower)
+                self.soundSamples.append(smoothedPower)
                 
-                // Keep array at reasonable size
-                if self.soundSamples.count > 50 {
+                // Keep array at optimal size for circular visualization (24 samples)
+                if self.soundSamples.count > 24 {
                     self.soundSamples.removeFirst()
                 }
             }
-            
-            // Let user control when to stop - no auto-stop
             
         } catch {
             print("Could not start recording: \(error.localizedDescription)")

@@ -86,10 +86,10 @@ struct ContentView: View {
     private var mainView: some View {
         ZStack {
             VStack {
+                statusBanner
                 titleBar
                 taskListView
                 Spacer()
-                statusView
             }
             .padding()
             
@@ -172,54 +172,65 @@ struct ContentView: View {
         .frame(maxWidth: .infinity)
     }
     
-    private var statusView: some View {
+    private var statusBanner: some View {
         Group {
             switch viewModel.appState {
-            case .idle:
+            case .idle, .preview:
                 EmptyView()
                 
             case .listening:
                 HStack {
                     Image(systemName: "ear")
+                        .foregroundColor(.blue)
                     Text("Listening...")
+                        .font(.subheadline)
+                        .fontWeight(.medium)
                 }
-                .padding()
-                .background(Color(UIColor.systemBackground))
-                .cornerRadius(10)
-                .shadow(color: Color.black.opacity(0.1), radius: 5)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .background(Color.blue.opacity(0.1))
+                .cornerRadius(8)
                 
             case .transcribing:
                 HStack {
                     ProgressView()
+                        .scaleEffect(0.8)
                         .padding(.trailing, 5)
                     Text("Converting speech to text...")
+                        .font(.subheadline)
+                        .fontWeight(.medium)
                 }
-                .padding()
-                .background(Color(UIColor.systemBackground))
-                .cornerRadius(10)
-                .shadow(color: Color.black.opacity(0.1), radius: 5)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .background(Color.orange.opacity(0.1))
+                .cornerRadius(8)
                 
             case .parsing:
                 HStack {
                     ProgressView()
+                        .scaleEffect(0.8)
                         .padding(.trailing, 5)
                     Text("Extracting tasks from your speech...")
+                        .font(.subheadline)
+                        .fontWeight(.medium)
                 }
-                .padding()
-                .background(Color(UIColor.systemBackground))
-                .cornerRadius(10)
-                .shadow(color: Color.black.opacity(0.1), radius: 5)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .background(Color.purple.opacity(0.1))
+                .cornerRadius(8)
                 
             case .committed:
                 HStack {
                     Image(systemName: "checkmark.circle.fill")
                         .foregroundColor(.green)
                     Text("Tasks added to your list!")
+                        .font(.subheadline)
+                        .fontWeight(.medium)
                 }
-                .padding()
-                .background(Color(UIColor.systemBackground))
-                .cornerRadius(10)
-                .shadow(color: Color.black.opacity(0.1), radius: 5)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .background(Color.green.opacity(0.1))
+                .cornerRadius(8)
                 
             case .error(let message):
                 HStack {
@@ -227,21 +238,20 @@ struct ContentView: View {
                         .foregroundColor(.red)
                     Text(message)
                         .font(.subheadline)
+                        .fontWeight(.medium)
+                        .lineLimit(2)
                 }
-                .padding()
-                .background(Color(UIColor.systemBackground))
-                .cornerRadius(10)
-                .shadow(color: Color.black.opacity(0.1), radius: 5)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .background(Color.red.opacity(0.1))
+                .cornerRadius(8)
                 .onTapGesture {
                     viewModel.appState = .idle
                 }
-                
-            default:
-                EmptyView()
             }
         }
-        .transition(.move(edge: .bottom))
-        .animation(.easeInOut, value: viewModel.appState)
+        .transition(.move(edge: .top).combined(with: .opacity))
+        .animation(.easeInOut(duration: 0.3), value: viewModel.appState)
     }
     
     private var microphoneButton: some View {
