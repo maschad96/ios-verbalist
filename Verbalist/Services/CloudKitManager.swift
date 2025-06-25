@@ -55,12 +55,13 @@ class CloudKitManager {
     
     func fetchTasks() async throws -> [TodoTask] {
         let query = CKQuery(recordType: "Task", predicate: NSPredicate(value: true))
-        query.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: false)]
+        query.sortDescriptors = [NSSortDescriptor(key: "modificationDate", ascending: false)]
         
         do {
-            let result = try await database.records(matching: query)
-            let records = result.matchResults.compactMap { try? $0.1.get() }
-            return records.compactMap { TodoTask(record: $0) }
+            let records = try await database.perform(query, inZoneWith: nil)
+            
+            let tasks = records.compactMap { TodoTask(record: $0) }
+            return tasks
         } catch {
             print("Error fetching tasks: \(error.localizedDescription)")
             throw error
