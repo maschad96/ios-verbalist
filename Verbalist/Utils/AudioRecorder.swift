@@ -12,7 +12,8 @@ import SwiftUI
 class AudioRecorder: NSObject, ObservableObject, AVAudioRecorderDelegate {
     @Published var isRecording = false
     @Published var recordingURL: URL?
-    @Published var soundSamples: [Float] = []
+    // Start with zeros for proper animation from bottom
+    @Published var soundSamples: [Float] = Array(repeating: 0.0, count: 20)
     
     private var audioRecorder: AVAudioRecorder?
     private var timer: Timer?
@@ -30,8 +31,9 @@ class AudioRecorder: NSObject, ObservableObject, AVAudioRecorderDelegate {
         recordingSession = AVAudioSession.sharedInstance()
         
         do {
-            try recordingSession?.setCategory(.record, mode: .default)
+            try recordingSession?.setCategory(.playAndRecord, mode: .default, options: [.defaultToSpeaker])
             try recordingSession?.setActive(true)
+            print("Audio session set up successfully")
         } catch {
             print("Failed to set up recording session: \(error.localizedDescription)")
         }
@@ -39,67 +41,130 @@ class AudioRecorder: NSObject, ObservableObject, AVAudioRecorderDelegate {
     }
     
     func requestPermission() async -> Bool {
-        // Since AVAudioSession.recordPermission is deprecated in iOS 17.0,
-        // we'll use AVAudioApplication.requestRecordPermission directly
         return await withCheckedContinuation { continuation in
-            AVAudioApplication.requestRecordPermission { granted in
-                if granted {
-                    print("Microphone permission granted")
-                } else {
-                    print("Microphone permission denied")
+            #if os(iOS)
+            switch AVAudioSession.sharedInstance().recordPermission {
+            case .granted:
+                print("Microphone permission already granted")
+                continuation.resume(returning: true)
+            case .denied:
+                print("Microphone permission denied")
+                continuation.resume(returning: false)
+            case .undetermined:
+                AVAudioSession.sharedInstance().requestRecordPermission { granted in
+                    print("Microphone permission \(granted ? "granted" : "denied")")
+                    continuation.resume(returning: granted)
                 }
+            @unknown default:
+                continuation.resume(returning: false)
+            }
+            #else
+            // For macOS
+            AVAudioApplication.requestRecordPermission { granted in
                 continuation.resume(returning: granted)
             }
+            #endif
         }
     }
     
     func startRecording() {
-        let documentPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-        let audioFilename = documentPath.appendingPathComponent("\(UUID().uuidString).m4a")
+        print("Starting recording...")
         
+        // Set up audio session specifically for recording
+        #if os(iOS)
+        do {
+            let audioSession = AVAudioSession.sharedInstance()
+            try audioSession.setCategory(.record, mode: .measurement, options: [])
+            try audioSession.setActive(true)
+            print("Audio session configured for recording")
+        } catch {
+            print("Failed to configure audio session: \(error)")
+            return
+        }
+        #endif
+        
+        let documentPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        let audioFilename = documentPath.appendingPathComponent("\(UUID().uuidString).wav")
+        
+        // Use Linear PCM in WAV format for better metering accuracy
         let settings: [String: Any] = [
-            AVFormatIDKey: Int(kAudioFormatMPEG4AAC),
+            AVFormatIDKey: Int(kAudioFormatLinearPCM),
             AVSampleRateKey: 44100.0,
             AVNumberOfChannelsKey: 1,
-            AVEncoderAudioQualityKey: AVAudioQuality.high.rawValue
+            AVLinearPCMBitDepthKey: 16,
+            AVLinearPCMIsFloatKey: false,
+            AVLinearPCMIsBigEndianKey: false
         ]
         
         do {
             audioRecorder = try AVAudioRecorder(url: audioFilename, settings: settings)
             audioRecorder?.delegate = self
             audioRecorder?.isMeteringEnabled = true
-            audioRecorder?.record()
             
-            isRecording = true
-            recordingURL = audioFilename
-            soundSamples = []
+            guard let recorder = audioRecorder else {
+                print("Failed to create audio recorder")
+                return
+            }
             
-            // Start monitoring audio levels with higher frequency for smoother animation
-            self.timer = Timer.scheduledTimer(withTimeInterval: 0.05, repeats: true) { [weak self] _ in
-                guard let self = self, let recorder = self.audioRecorder, recorder.isRecording else { return }
+            let started = recorder.record()
+            print("Recording started: \(started)")
+            
+            if started {
+                isRecording = true
+                recordingURL = audioFilename
+                // Reset to zeros when starting recording to ensure animation from bottom
+                soundSamples = Array(repeating: 0.0, count: 20)
                 
-                recorder.updateMeters()
-                let avgPower = recorder.averagePower(forChannel: 0)
-                let peakPower = recorder.peakPower(forChannel: 0)
-                
-                // Use a combination of average and peak for more dynamic visualization
-                let combinedPower = (avgPower * 0.7) + (peakPower * 0.3)
-                let normalizedPower = self.normalizeSoundLevel(level: combinedPower)
-                
-                // Apply some smoothing to reduce jitter
-                let smoothedPower: Float
-                if let lastSample = self.soundSamples.last {
-                    smoothedPower = lastSample * 0.3 + normalizedPower * 0.7
-                } else {
-                    smoothedPower = normalizedPower
-                }
-                
-                // Add to samples array
-                self.soundSamples.append(smoothedPower)
-                
-                // Keep array at optimal size for circular visualization (24 samples)
-                if self.soundSamples.count > 24 {
-                    self.soundSamples.removeFirst()
+                // Start monitoring audio levels with higher frequency for smoother animation
+                self.timer = Timer.scheduledTimer(withTimeInterval: 0.05, repeats: true) { [weak self] _ in
+                    guard let self = self, let recorder = self.audioRecorder, recorder.isRecording else { return }
+                    
+                    recorder.updateMeters()
+                    let avgPower = recorder.averagePower(forChannel: 0)
+                    let peakPower = recorder.peakPower(forChannel: 0)
+                    
+                    // Reduce logging for performance
+                    if Int.random(in: 0...20) == 0 {  // Only log occasionally 
+                        print("Audio levels - Avg: \(avgPower), Peak: \(peakPower)")
+                    }
+                    
+                    // Generate multiple samples for a more interesting visualization
+                    var newSamples = [Float]()
+                    
+                    // Main amplitude from peak power
+                    let normalizedPeak = self.normalizeSoundLevel(level: peakPower)
+                    
+                    // Create a varied pattern based on the current audio level
+                    for i in 0..<20 {
+                        // Base value from actual audio
+                        let baseSample = normalizedPeak
+                        
+                        // Add some variation
+                        let variation = Float(sin(Double(i) * 0.3 + Date().timeIntervalSince1970 * 2.0)) * 0.15
+                        
+                        // Apply weighted average with previous sample (if exists) for smoothing
+                        let prevSample: Float
+                        if self.soundSamples.isEmpty {
+                            prevSample = 0.0
+                        } else {
+                            let prevIndex = i % self.soundSamples.count
+                            prevSample = self.soundSamples[prevIndex]
+                        }
+                        
+                        // Weight for smoothing (less smoothing = more responsive)
+                        let weight: Float = 0.3
+                        let smoothedSample = prevSample * weight + (baseSample + variation) * (1.0 - weight)
+                        
+                        // Ensure we stay in valid range and have minimum activity
+                        let finalSample = max(0.15, min(1.0, smoothedSample))
+                        newSamples.append(finalSample)
+                    }
+                    
+                    // Add to samples array on main thread
+                    DispatchQueue.main.async {
+                        // Completely replace samples with new ones
+                        self.soundSamples = newSamples
+                    }
                 }
             }
             
@@ -137,13 +202,24 @@ class AudioRecorder: NSObject, ObservableObject, AVAudioRecorderDelegate {
     
     private func normalizeSoundLevel(level: Float) -> Float {
         // Audio levels come in from -160 to 0 dB
-        // Normalize to values between 0 and 1
-        let minDb: Float = -80
+        // Use a more sensitive range for voice input
+        let minDb: Float = -60  // Even more sensitive to quieter sounds
+        let maxDb: Float = -10  // Cap at reasonable speaking volume
         
-        // If level is less than minDb, set it to minDb
-        let adjustedLevel = max(minDb, level)
+        // Clamp the level to our desired range
+        let clampedLevel = max(minDb, min(maxDb, level))
         
         // Convert to a value between 0 and 1
-        return (adjustedLevel - minDb) / (0 - minDb)
+        let normalized = (clampedLevel - minDb) / (maxDb - minDb)
+        
+        // Apply a stronger curve to make it more responsive to voice
+        // The 0.5 power makes even quieter inputs produce visible activity
+        let curved = pow(normalized, 0.5) 
+        
+        // Boost the values slightly to ensure good visualization
+        let boosted = curved * 1.2
+        
+        // Make sure we stay in valid range
+        return max(0.1, min(1.0, boosted))
     }
 }
