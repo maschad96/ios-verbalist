@@ -41,11 +41,6 @@ struct SettingsView: View {
                         Text(viewModel.hasGroqKey ? "Connected" : "Not Connected")
                             .foregroundColor(viewModel.hasGroqKey ? .green : .red)
                     }
-                    
-                    
-                    Text("To change API keys, update the environment variables in your Xcode scheme.")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
                 }
                 
                 Section(header: Text("About")) {
@@ -127,7 +122,9 @@ class SettingsViewModel: ObservableObject {
             self.selectedWhisperModel = currentModels.whisper
         }
         
-        self.hasGroqKey = ProcessInfo.processInfo.environment["GROQ_API_KEY"] != nil
+        // Use the encrypted key system for consistent detection
+        let groqKey = SecureKeyManager.shared.getGroqKey()
+        self.hasGroqKey = !groqKey.isEmpty && groqKey != "gsk-xxxx"
         
         print("SettingsViewModel initialized with LLM: \(self.selectedLLMModel), Whisper: \(self.selectedWhisperModel)")
     }

@@ -6,16 +6,17 @@
 //
 
 import SwiftUI
+import Foundation
 
 struct ContentView: View {
     @StateObject private var viewModel = TaskViewModel()
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
     @State private var showingOnboarding = false
     @State private var showSettings = false
-    // Check if we have required API keys
+    // Check if we have required API keys using the encrypted key system
     private var hasApiKey: Bool {
-        let hasGroq = ProcessInfo.processInfo.environment["GROQ_API_KEY"] != nil
-        return hasGroq
+        let groqKey = SecureKeyManager.shared.getGroqKey()
+        return !groqKey.isEmpty && groqKey != "gsk-xxxx" // Exclude debug fallback
     }
     
     var body: some View {
@@ -105,23 +106,15 @@ struct ContentView: View {
         HStack {
             Text("VERBALIST")
                 .font(.system(.title, design: .rounded))
-                .fontWeight(.bold)
+                .fontWeight(.light)
                 .foregroundColor(.primary)
             
             Spacer()
             
             Button(action: {
-                // Toggle between completed and incomplete tasks
-            }) {
-                Image(systemName: "line.3.horizontal.decrease.circle")
-                    .font(.title2)
-                    .foregroundColor(.primary)
-            }
-            
-            Button(action: {
                 showSettings = true
             }) {
-                Image(systemName: "gear")
+                Image(systemName: "gearshape")
                     .font(.title2)
                     .foregroundColor(.primary)
             }
@@ -147,6 +140,8 @@ struct ContentView: View {
                         )
                     }
                 }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
             }
         }
     }
