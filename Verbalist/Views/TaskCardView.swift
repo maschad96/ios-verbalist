@@ -16,7 +16,7 @@ struct TaskCardView: View {
     var body: some View {
         HStack {
             Image(systemName: todoTask.isCompleted ? "checkmark.circle.fill" : "circle")
-                .foregroundColor(todoTask.isCompleted ? .green : .gray)
+                .foregroundColor(todoTask.isCompleted ? .sageGreen : .gray)
                 .font(.title2)
                 .onTapGesture {
                     onToggleCompletion()

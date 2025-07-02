@@ -6,11 +6,14 @@
 //
 
 import SwiftUI
+import StoreKit
 
 struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @ObservedObject var viewModel: SettingsViewModel
-    @State private var showResetAlert = false
+    @State private var isRestoringPurchases = false
+    @State private var restoreMessage = ""
+    @State private var showRestoreAlert = false
     
     var body: some View {
         NavigationView {
@@ -44,20 +47,32 @@ struct SettingsView: View {
                     }
                 }
                 
-                #if DEBUG
-                Section(header: Text("Development Options")) {
-                    Button("Reset Onboarding") {
-                        UserDefaults.standard.removeObject(forKey: "hasCompletedOnboarding")
-                        showResetAlert = true
+                Section(header: Text("Subscription")) {
+                    Button(action: {
+                        Task {
+                            await restorePurchases()
+                        }
+                    }) {
+                        HStack {
+                            Text("Restore Purchases")
+                            Spacer()
+                            if isRestoringPurchases {
+                                ProgressView()
+                                    .scaleEffect(0.8)
+                            }
+                        }
                     }
-                    .foregroundColor(.red)
-                    .alert("Onboarding Reset", isPresented: $showResetAlert) {
-                        Button("OK") { dismiss() }
-                    } message: {
-                        Text("Onboarding has been reset. The app will show the onboarding screens on next launch.")
-                    }
+                    .foregroundColor(.sageGreen)
+                    .disabled(isRestoringPurchases)
                 }
-                #endif
+                
+                Section(header: Text("Legal")) {
+                    Link("Privacy Policy", destination: URL(string: "https://www.apple.com/privacy/privacy-policy/")!)
+                        .foregroundColor(.sageGreen)
+                    
+                    Link("Terms of Use", destination: URL(string: "https://www.apple.com/legal/internet-services/terms/site.html")!)
+                        .foregroundColor(.sageGreen)
+                }
                 
                 Section(header: Text("About")) {
                     Text("Verbalist")
@@ -71,6 +86,11 @@ struct SettingsView: View {
             }
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
+            .alert("Restore Purchases", isPresented: $showRestoreAlert) {
+                Button("OK") { }
+            } message: {
+                Text(restoreMessage)
+            }
             .onAppear {
                 // Force refresh selected models from service
                 let currentModels = viewModel.aiService.getCurrentModels()
@@ -89,6 +109,20 @@ struct SettingsView: View {
                 }
             }
         }
+    }
+    
+    private func restorePurchases() async {
+        isRestoringPurchases = true
+        
+        do {
+            try await AppStore.sync()
+            restoreMessage = "Purchase restore completed successfully."
+        } catch {
+            restoreMessage = "Failed to restore purchases: \(error.localizedDescription)"
+        }
+        
+        isRestoringPurchases = false
+        showRestoreAlert = true
     }
 }
 

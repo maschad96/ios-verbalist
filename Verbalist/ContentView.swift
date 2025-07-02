@@ -10,14 +10,16 @@ import Foundation
 
 struct ContentView: View {
     @StateObject private var viewModel = TaskViewModel()
+    @State private var subscriptionManager = SubscriptionManager.shared
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
     @State private var showingOnboarding = false
     @State private var showSettings = false
     @State private var showClearTasksConfirmation = false
+    @State private var isCheckingSubscription = true
     
     // DEVELOPMENT ONLY: Set to true to force showing onboarding on next launch
     #if DEBUG
-    @State private var forceShowOnboarding = true
+    @State private var forceShowOnboarding = false  // Changed to false to prevent forced onboarding
     #endif
     // Check if we have required API keys using the encrypted key system
     private var hasApiKey: Bool {
@@ -29,26 +31,55 @@ struct ContentView: View {
         ZStack {
             if !hasApiKey {
                 apiKeyMissingView
+            } else if isCheckingSubscription {
+                // Show loading while checking subscription status
+                VStack {
+                    ProgressView()
+                        .scaleEffect(1.5)
+                    Text("Loading...")
+                        .font(.headline)
+                        .padding(.top)
+                }
+                .task {
+                    // Clear any force onboarding flags that might be set
+                    UserDefaults.standard.set(false, forKey: "forceOnboarding")
+                    UserDefaults.standard.synchronize()
+                    
+                    // Initialize subscription manager and check status
+                    await subscriptionManager.initialize()
+                    
+                    // Debug: Check what the subscription status is after initialization
+                    print("DEBUG ContentView: After initialization, isSubscribed = \(subscriptionManager.isSubscribed)")
+                    print("DEBUG ContentView: hasCompletedOnboarding = \(hasCompletedOnboarding)")
+                    print("DEBUG ContentView: UserDefaults isSubscribed = \(UserDefaults.standard.bool(forKey: "isSubscribed"))")
+                    print("DEBUG ContentView: UserDefaults forceOnboarding = \(UserDefaults.standard.bool(forKey: "forceOnboarding"))")
+                    
+                    // Done checking, proceed to show appropriate view
+                    isCheckingSubscription = false
+                }
             } else {
                 mainView
                     .onAppear {
+                        viewModel.loadTasks()
+                        
+                        // Determine if we should show onboarding based on current state
                         #if DEBUG
                         if forceShowOnboarding {
                             // For development only - force show onboarding
                             hasCompletedOnboarding = false
                             showingOnboarding = true
                             forceShowOnboarding = false // Only force once per launch
-                        } else if !hasCompletedOnboarding {
-                            showingOnboarding = true
+                        } else {
+                            // Check subscription status to determine onboarding
+                            let shouldShowOnboarding = !hasCompletedOnboarding && !subscriptionManager.isSubscribed
+                            print("DEBUG ContentView: shouldShowOnboarding = \(shouldShowOnboarding) (hasCompleted: \(hasCompletedOnboarding), isSubscribed: \(subscriptionManager.isSubscribed))")
+                            showingOnboarding = shouldShowOnboarding
                         }
                         #else
                         // Normal production behavior
-                        if !hasCompletedOnboarding {
-                            showingOnboarding = true
-                        }
+                        let shouldShowOnboarding = !hasCompletedOnboarding && !subscriptionManager.isSubscribed
+                        showingOnboarding = shouldShowOnboarding
                         #endif
-                        
-                        viewModel.loadTasks()
                     }
                     .fullScreenCover(isPresented: $showingOnboarding) {
                         OnboardingView(isShowingOnboarding: $showingOnboarding)
@@ -129,18 +160,6 @@ struct ContentView: View {
             
             Spacer()
             
-            #if DEBUG
-            // Development only: Show onboarding button
-            Button(action: {
-                hasCompletedOnboarding = false
-                showingOnboarding = true
-            }) {
-                Image(systemName: "book")
-                    .font(.title2)
-                    .foregroundColor(.blue)
-            }
-            .padding(.trailing, 12)
-            #endif
             
             // Add clear tasks button
             Button(action: {
@@ -275,14 +294,14 @@ struct ContentView: View {
             case .committed:
                 HStack {
                     Image(systemName: "checkmark.circle.fill")
-                        .foregroundColor(.green)
+                        .foregroundColor(.sageGreen)
                     Text("Tasks added to your list!")
                         .font(.subheadline)
                         .fontWeight(.medium)
                 }
                 .padding(.horizontal, 16)
                 .padding(.vertical, 8)
-                .background(Color.green.opacity(0.1))
+                .background(Color.sageGreen.opacity(0.1))
                 .cornerRadius(8)
                 
             case .error(let message):

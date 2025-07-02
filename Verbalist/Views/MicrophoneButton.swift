@@ -13,7 +13,7 @@ struct MicrophoneButton: View {
     var action: () -> Void
     
     private let buttonSize: CGFloat = 80
-    private let buttonColor = Color.blue
+    private let buttonColor = Color.charcoal
     
     // Animated properties
     @State private var glowOpacity: Double = 0
@@ -36,13 +36,13 @@ struct MicrophoneButton: View {
                     
                     // Stop button in the center
                     RoundedRectangle(cornerRadius: 5)
-                        .fill(Color.red)
+                        .fill(Color.sageGreen)
                         .frame(width: 20, height: 20)
-                        .shadow(color: Color.red.opacity(0.5), radius: 5, x: 0, y: 0)
+                        .shadow(color: Color.sageGreen.opacity(0.5), radius: 5, x: 0, y: 0)
                         .scaleEffect(scale)
                         .overlay(
                             Circle()
-                                .stroke(Color.red.opacity(0.3), lineWidth: 2)
+                                .stroke(Color.sageGreen.opacity(0.3), lineWidth: 2)
                                 .scaleEffect(scale + 0.2)
                                 .opacity(glowOpacity)
                         )
@@ -124,10 +124,10 @@ struct EqualizerView: View {
         .padding()
         .background(
             RoundedRectangle(cornerRadius: 20)
-                .fill(Color.blue.opacity(0.1))
+                .fill(Color.sageGreen.opacity(0.1))
                 .overlay(
                     RoundedRectangle(cornerRadius: 20)
-                        .stroke(Color.blue.opacity(0.3), lineWidth: 2)
+                        .stroke(Color.sageGreen.opacity(0.3), lineWidth: 2)
                 )
         )
     }
@@ -150,7 +150,7 @@ struct EqualizerBar: View {
             RoundedRectangle(cornerRadius: 1.5)
                 .fill(
                     LinearGradient(
-                        colors: [.cyan, .blue],
+                        colors: [.sageGreen.opacity(0.8), .sageGreen],
                         startPoint: .top,
                         endPoint: .bottom
                     )
@@ -161,7 +161,7 @@ struct EqualizerBar: View {
             RoundedRectangle(cornerRadius: 1.5)
                 .fill(
                     LinearGradient(
-                        colors: [.blue, .cyan],
+                        colors: [.sageGreen, .sageGreen.opacity(0.8)],
                         startPoint: .top,
                         endPoint: .bottom
                     )
