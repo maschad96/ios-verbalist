@@ -12,11 +12,13 @@ struct TodoTask: Identifiable, Codable, Equatable {
     var id: UUID
     var title: String
     var isCompleted: Bool
+    var sortOrder: Int
     
-    init(id: UUID = UUID(), title: String, isCompleted: Bool = false) {
+    init(id: UUID = UUID(), title: String, isCompleted: Bool = false, sortOrder: Int = 0) {
         self.id = id
         self.title = title
         self.isCompleted = isCompleted
+        self.sortOrder = sortOrder
     }
     
     static func == (lhs: TodoTask, rhs: TodoTask) -> Bool {
@@ -27,11 +29,14 @@ struct TodoTask: Identifiable, Codable, Equatable {
 // CloudKit Record conversion
 extension TodoTask {
     init?(record: CKRecord) {
-        guard let title = record["title"] as? String else { return nil }
-        
+        // Initialize all properties first
         self.id = UUID(uuidString: record.recordID.recordName) ?? UUID()
-        self.title = title
         self.isCompleted = record["isCompleted"] as? Bool ?? false
+        self.sortOrder = record["sortOrder"] as? Int ?? 0
+        
+        // Then check required fields
+        guard let title = record["title"] as? String else { return nil }
+        self.title = title
     }
     
     func toCKRecord() -> CKRecord {
@@ -40,6 +45,7 @@ extension TodoTask {
         
         record["title"] = title
         record["isCompleted"] = isCompleted
+        record["sortOrder"] = sortOrder
         
         return record
     }

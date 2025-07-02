@@ -15,11 +15,12 @@ struct TaskCardView: View {
     
     var body: some View {
         HStack {
-            Button(action: onToggleCompletion) {
-                Image(systemName: todoTask.isCompleted ? "checkmark.circle.fill" : "circle")
-                    .foregroundColor(todoTask.isCompleted ? .green : .gray)
-                    .font(.title2)
-            }
+            Image(systemName: todoTask.isCompleted ? "checkmark.circle.fill" : "circle")
+                .foregroundColor(todoTask.isCompleted ? .green : .gray)
+                .font(.title2)
+                .onTapGesture {
+                    onToggleCompletion()
+                }
             
             Text(todoTask.title)
                 .font(.headline)
@@ -43,25 +44,11 @@ struct TaskCardView: View {
                     .padding(8)
             }
         }
-        .padding()
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
         .background(Color(.systemBackground))
-        .cornerRadius(12)
         .shadow(color: Color.black.opacity(0.1), radius: 5)
         .contentShape(Rectangle())
-        .contextMenu {
-            Button(action: onEdit) {
-                Label("Edit", systemImage: "pencil")
-            }
-            
-            Button(action: onToggleCompletion) {
-                Label(todoTask.isCompleted ? "Mark Incomplete" : "Mark Complete", 
-                      systemImage: todoTask.isCompleted ? "circle" : "checkmark.circle")
-            }
-            
-            Button(role: .destructive, action: onDelete) {
-                Label("Delete", systemImage: "trash")
-            }
-        }
     }
 }
 

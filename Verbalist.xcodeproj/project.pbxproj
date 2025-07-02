@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		C9E8C60E2E146CE500D1D116 /* Storekit.storekit in Resources */ = {isa = PBXBuildFile; fileRef = C9E8C60D2E146CE500D1D116 /* Storekit.storekit */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		C99117AF2DEC46E4002B8F0B /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -28,6 +32,7 @@
 		C99117AE2DEC46E4002B8F0B /* VerbalistTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = VerbalistTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		C99117B82DEC46E4002B8F0B /* VerbalistUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = VerbalistUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		C9E8C56E2E046AB300D1D116 /* KeyEncryptor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyEncryptor.swift; sourceTree = "<group>"; };
+		C9E8C60D2E146CE500D1D116 /* Storekit.storekit */ = {isa = PBXFileReference; lastKnownFileType = text; path = Storekit.storekit; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -76,6 +81,7 @@
 		C99117952DEC46E1002B8F0B = {
 			isa = PBXGroup;
 			children = (
+				C9E8C60D2E146CE500D1D116 /* Storekit.storekit */,
 				C9E8C56E2E046AB300D1D116 /* KeyEncryptor.swift */,
 				C99117A02DEC46E1002B8F0B /* Verbalist */,
 				C99117B12DEC46E4002B8F0B /* VerbalistTests */,
@@ -214,6 +220,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C9E8C60E2E146CE500D1D116 /* Storekit.storekit in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

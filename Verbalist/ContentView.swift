@@ -13,6 +13,12 @@ struct ContentView: View {
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
     @State private var showingOnboarding = false
     @State private var showSettings = false
+    @State private var showClearTasksConfirmation = false
+    
+    // DEVELOPMENT ONLY: Set to true to force showing onboarding on next launch
+    #if DEBUG
+    @State private var forceShowOnboarding = true
+    #endif
     // Check if we have required API keys using the encrypted key system
     private var hasApiKey: Bool {
         let groqKey = SecureKeyManager.shared.getGroqKey()
@@ -26,13 +32,25 @@ struct ContentView: View {
             } else {
                 mainView
                     .onAppear {
+                        #if DEBUG
+                        if forceShowOnboarding {
+                            // For development only - force show onboarding
+                            hasCompletedOnboarding = false
+                            showingOnboarding = true
+                            forceShowOnboarding = false // Only force once per launch
+                        } else if !hasCompletedOnboarding {
+                            showingOnboarding = true
+                        }
+                        #else
+                        // Normal production behavior
                         if !hasCompletedOnboarding {
                             showingOnboarding = true
                         }
+                        #endif
                         
                         viewModel.loadTasks()
                     }
-                    .sheet(isPresented: $showingOnboarding) {
+                    .fullScreenCover(isPresented: $showingOnboarding) {
                         OnboardingView(isShowingOnboarding: $showingOnboarding)
                             .onDisappear {
                                 hasCompletedOnboarding = true
@@ -111,6 +129,38 @@ struct ContentView: View {
             
             Spacer()
             
+            #if DEBUG
+            // Development only: Show onboarding button
+            Button(action: {
+                hasCompletedOnboarding = false
+                showingOnboarding = true
+            }) {
+                Image(systemName: "book")
+                    .font(.title2)
+                    .foregroundColor(.blue)
+            }
+            .padding(.trailing, 12)
+            #endif
+            
+            // Add clear tasks button
+            Button(action: {
+                showClearTasksConfirmation = true
+            }) {
+                Image(systemName: "trash")
+                    .font(.title2)
+                    .foregroundColor(.primary)
+            }
+            .padding(.trailing, 12)
+            .alert("Clear All Tasks", isPresented: $showClearTasksConfirmation) {
+                Button("Cancel", role: .cancel) {}
+                Button("Clear All", role: .destructive) {
+                    viewModel.clearAllTasks()
+                }
+            } message: {
+                Text("Are you sure you want to delete all tasks? This action cannot be undone.")
+            }
+            
+            // Settings button
             Button(action: {
                 showSettings = true
             }) {
@@ -123,14 +173,16 @@ struct ContentView: View {
     }
     
     private var taskListView: some View {
-        ScrollView {
+        Group {
             if viewModel.isLoading {
                 ProgressView()
                     .padding()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
             } else if viewModel.tasks.isEmpty {
                 emptyStateView
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
             } else {
-                LazyVStack(spacing: 12) {
+                List {
                     ForEach(viewModel.tasks) { task in
                         TaskCardView(
                             todoTask: task,
@@ -138,10 +190,16 @@ struct ContentView: View {
                             onDelete: { viewModel.deleteTask(task) },
                             onEdit: { viewModel.editTask(task) }
                         )
+                        .listRowBackground(Color.clear)
+                        .listRowSeparator(.hidden)
+                        .listRowInsets(EdgeInsets(top: 6, leading: 0, bottom: 6, trailing: 0))
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
                     }
+                    .onMove(perform: viewModel.moveTask)
                 }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 8)
+                .listStyle(.plain)
+                .scrollContentBackground(.hidden)
+                .animation(.easeInOut(duration: 0.6), value: viewModel.tasks)
             }
         }
     }

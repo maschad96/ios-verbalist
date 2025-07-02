@@ -10,6 +10,7 @@ import SwiftUI
 struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @ObservedObject var viewModel: SettingsViewModel
+    @State private var showResetAlert = false
     
     var body: some View {
         NavigationView {
@@ -42,6 +43,21 @@ struct SettingsView: View {
                             .foregroundColor(viewModel.hasGroqKey ? .green : .red)
                     }
                 }
+                
+                #if DEBUG
+                Section(header: Text("Development Options")) {
+                    Button("Reset Onboarding") {
+                        UserDefaults.standard.removeObject(forKey: "hasCompletedOnboarding")
+                        showResetAlert = true
+                    }
+                    .foregroundColor(.red)
+                    .alert("Onboarding Reset", isPresented: $showResetAlert) {
+                        Button("OK") { dismiss() }
+                    } message: {
+                        Text("Onboarding has been reset. The app will show the onboarding screens on next launch.")
+                    }
+                }
+                #endif
                 
                 Section(header: Text("About")) {
                     Text("Verbalist")
