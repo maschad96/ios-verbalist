@@ -222,22 +222,12 @@ class TaskViewModel: ObservableObject {
                 let fetchedTasks = try await cloudKitManager.fetchTasks()
                 
                 await MainActor.run {
-                    // Debug log fetched tasks
-                    print("DEBUG: Fetched \(fetchedTasks.count) tasks from CloudKit")
-                    for (index, task) in fetchedTasks.enumerated() {
-                        print("DEBUG: Fetched task #\(index+1): '\(task.title)' - sortOrder: \(task.sortOrder), completed: \(task.isCompleted)")
-                    }
                     
                     tasks = fetchedTasks
                     
                     // Sort immediately after loading to prevent flash of unsorted content
                     sortTasks()
                     
-                    // Debug log tasks after sorting
-                    print("DEBUG: Tasks after sorting:")
-                    for (index, task) in tasks.enumerated() {
-                        print("DEBUG: Sorted task #\(index+1): '\(task.title)' - sortOrder: \(task.sortOrder), completed: \(task.isCompleted)")
-                    }
                     
                     isLoading = false
                 }
@@ -268,7 +258,7 @@ class TaskViewModel: ObservableObject {
                     }
                 }
             } catch {
-                print("Error toggling completion: \(error.localizedDescription)")
+                // Handle error silently in production
             }
         }
     }
@@ -282,7 +272,7 @@ class TaskViewModel: ObservableObject {
                     tasks.removeAll { $0.id == task.id }
                 }
             } catch {
-                print("Error deleting task: \(error.localizedDescription)")
+                // Handle error silently in production
             }
         }
     }
@@ -299,7 +289,6 @@ class TaskViewModel: ObservableObject {
         
         Task {
             do {
-                print("DEBUG: Starting to delete all \(tasks.count) tasks")
                 
                 // Get a copy of all task IDs before deletion
                 let taskIDs = tasks.map { $0.id }
@@ -308,9 +297,8 @@ class TaskViewModel: ObservableObject {
                 for id in taskIDs {
                     do {
                         try await cloudKitManager.deleteTask(withID: id)
-                        print("DEBUG: Successfully deleted task with ID: \(id)")
                     } catch {
-                        print("ERROR: Failed to delete task with ID \(id): \(error.localizedDescription)")
+                        // Handle individual deletion errors silently
                     }
                 }
                 
@@ -325,13 +313,11 @@ class TaskViewModel: ObservableObject {
                         self?.appState = .idle
                     }
                     
-                    print("DEBUG: All tasks cleared from local state")
                 }
             } catch {
                 await MainActor.run {
                     isLoading = false
                     errorMessage = "Failed to clear tasks: \(error.localizedDescription)"
-                    print("ERROR: Failed to clear all tasks: \(error.localizedDescription)")
                 }
             }
         }
@@ -386,9 +372,9 @@ class TaskViewModel: ObservableObject {
             Task {
                 do {
                     let savedTasks = try await cloudKitManager.batchUpdateTasks(tasksToUpdate)
-                    print("DEBUG: Batch updated \(savedTasks.count) task sort orders")
+                    // Batch update successful
                 } catch {
-                    print("ERROR: Failed to batch update task sort orders: \(error.localizedDescription)")
+                    // Handle batch update error silently
                 }
             }
         }
@@ -396,11 +382,8 @@ class TaskViewModel: ObservableObject {
     
     private func assignSortOrderToNewTasks(_ newTasks: inout [TodoTask]) {
         let highestSortOrder = tasks.map { $0.sortOrder }.max() ?? 0
-        print("DEBUG: Assigning sort orders to new tasks - highest existing order: \(highestSortOrder)")
-        
         for (index, _) in newTasks.enumerated() {
             let newSortOrder = highestSortOrder + index + 1
-            print("DEBUG: Setting new task #\(index+1) sort order to \(newSortOrder)")
             newTasks[index].sortOrder = newSortOrder
         }
     }

@@ -32,44 +32,33 @@ class GroqService {
     private var currentWhisperModel = "whisper-large-v3"
     
     init() {
-        print("GroqService initialization - default models before override: LLM=\(currentLLMModel), Whisper=\(currentWhisperModel)")
         
         // Check for environment variable overrides
         if let modelFromEnv = ProcessInfo.processInfo.environment["GROQ_LLM_MODEL"], !modelFromEnv.isEmpty {
             self.currentLLMModel = modelFromEnv
-            print("Set LLM model from environment: \(modelFromEnv)")
         }
         
         if let whisperFromEnv = ProcessInfo.processInfo.environment["GROQ_WHISPER_MODEL"], !whisperFromEnv.isEmpty {
             self.currentWhisperModel = whisperFromEnv
-            print("Set Whisper model from environment: \(whisperFromEnv)")
         }
         
         // Force validate that the model is in the available models list
         if !Models.groqLLMs.contains(currentLLMModel) {
-            print("WARNING: Current LLM model \(currentLLMModel) not in available models list - resetting to default")
             self.currentLLMModel = Models.groqLLMs.first ?? "llama3-8b-8192"
         }
         
         // Note: API key is now handled securely via SecureKeyManager
-        print("GroqService initialized - using secure key management - final models: LLM=\(currentLLMModel), Whisper=\(currentWhisperModel)")
     }
     
     // Methods to change models at runtime
     func setLLMModel(_ model: String) {
-        print("Setting LLM model from: \(currentLLMModel) to: \(model)")
         
         if Models.groqLLMs.contains(model) {
             self.currentLLMModel = model
-            print("LLM model successfully set to: \(model)")
         } else {
-            print("WARNING: Unknown Groq model: \(model). Available models: \(Models.groqLLMs)")
-            print("Keeping current model: \(currentLLMModel)")
-            
             // If current model is also invalid, reset to a valid one
             if !Models.groqLLMs.contains(currentLLMModel) {
                 let newModel = Models.groqLLMs.first ?? "llama3-8b-8192"
-                print("Current model \(currentLLMModel) is also invalid. Resetting to: \(newModel)")
                 self.currentLLMModel = newModel
             }
         }
@@ -78,9 +67,6 @@ class GroqService {
     func setWhisperModel(_ model: String) {
         if Models.whisperModels.contains(model) {
             self.currentWhisperModel = model
-            print("Whisper model set to: \(model)")
-        } else {
-            print("Unknown whisper model: \(model). Using default: \(currentWhisperModel)")
         }
     }
     
@@ -127,9 +113,6 @@ class GroqService {
         let (data, response) = try await URLSession.shared.data(for: request)
         
         guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
-            if let responseString = String(data: data, encoding: .utf8) {
-                print("Groq error response: \(responseString)")
-            }
             throw NSError(domain: "GroqService", code: (response as? HTTPURLResponse)?.statusCode ?? -1, userInfo: [NSLocalizedDescriptionKey: "Transcription failed"])
         }
         
@@ -140,14 +123,10 @@ class GroqService {
     
     // Parse task text into structured data using Groq's LLM
     func parseTask(_ text: String) async throws -> TodoTask {
-        // Debug: print the current model being used
-        print("parseTask - Using LLM model: \(currentLLMModel)")
         
         // Validate the model again before using it
         if !Models.groqLLMs.contains(currentLLMModel) {
-            print("WARNING: Model \(currentLLMModel) is invalid for Groq. Resetting to safe default.")
             currentLLMModel = Models.groqLLMs.first ?? "llama3-8b-8192"
-            print("Reset to model: \(currentLLMModel)")
         }
         
         let url = URL(string: "\(groqBaseURL)/chat/completions")!
@@ -179,9 +158,6 @@ class GroqService {
         let (data, response) = try await URLSession.shared.data(for: request)
         
         guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
-            if let responseString = String(data: data, encoding: .utf8) {
-                print("Groq error response: \(responseString)")
-            }
             throw NSError(domain: "GroqService", code: (response as? HTTPURLResponse)?.statusCode ?? -1, userInfo: [NSLocalizedDescriptionKey: "Task parsing failed"])
         }
         
@@ -197,14 +173,10 @@ class GroqService {
     
     // Parse multiple tasks from rambling speech input - perfect for morning coffee brain dumps
     func parseTaskList(_ text: String) async throws -> [TodoTask] {
-        // Debug: print the current model being used
-        print("parseTaskList - Using LLM model: \(currentLLMModel)")
         
         // Validate the model again before using it
         if !Models.groqLLMs.contains(currentLLMModel) {
-            print("WARNING: Model \(currentLLMModel) is invalid for Groq. Resetting to safe default.")
             currentLLMModel = Models.groqLLMs.first ?? "llama3-8b-8192"
-            print("Reset to model: \(currentLLMModel)")
         }
         
         let url = URL(string: "\(groqBaseURL)/chat/completions")!
@@ -251,9 +223,6 @@ class GroqService {
         let (data, response) = try await URLSession.shared.data(for: request)
         
         guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
-            if let responseString = String(data: data, encoding: .utf8) {
-                print("Groq error response: \(responseString)")
-            }
             throw NSError(domain: "GroqService", code: (response as? HTTPURLResponse)?.statusCode ?? -1, userInfo: [NSLocalizedDescriptionKey: "Task list parsing failed"])
         }
         
@@ -286,7 +255,6 @@ class GroqService {
             let taskJSON = try decoder.decode(TaskJSON.self, from: jsonData)
             return TodoTask(title: taskJSON.title, isCompleted: false)
         } catch {
-            print("Error parsing JSON: \(error)")
             // Fallback: just create a task with the raw text as title
             return TodoTask(title: jsonString, isCompleted: false)
         }
@@ -313,9 +281,6 @@ class GroqService {
                 return TodoTask(title: taskJSON.title, isCompleted: false)
             }
         } catch {
-            print("Error parsing task list JSON: \(error)")
-            print("Raw JSON was: \(cleanedJSON)")
-            
             // Fallback: try to create a single task from the entire input
             return [TodoTask(title: "Parse tasks from: \(cleanedJSON.prefix(100))...", isCompleted: false)]
         }

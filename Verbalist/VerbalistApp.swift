@@ -24,18 +24,11 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         // Check for environment variables
         let hasGroqKey = ProcessInfo.processInfo.environment["GROQ_API_KEY"] != nil
         
-        if !hasGroqKey {
-            print("⚠️ Warning: GROQ_API_KEY environment variable not set - app will not function correctly")
-        }
         
         // Request CloudKit permissions
         let container = CKContainer.default()
         container.accountStatus { (accountStatus, error) in
-            if accountStatus == .available {
-                print("CloudKit available")
-            } else if let error = error {
-                print("CloudKit error: \(error.localizedDescription)")
-            }
+            // CloudKit status check completed
         }
         
         return true

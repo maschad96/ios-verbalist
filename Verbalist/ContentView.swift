@@ -48,11 +48,6 @@ struct ContentView: View {
                     // Initialize subscription manager and check status
                     await subscriptionManager.initialize()
                     
-                    // Debug: Check what the subscription status is after initialization
-                    print("DEBUG ContentView: After initialization, isSubscribed = \(subscriptionManager.isSubscribed)")
-                    print("DEBUG ContentView: hasCompletedOnboarding = \(hasCompletedOnboarding)")
-                    print("DEBUG ContentView: UserDefaults isSubscribed = \(UserDefaults.standard.bool(forKey: "isSubscribed"))")
-                    print("DEBUG ContentView: UserDefaults forceOnboarding = \(UserDefaults.standard.bool(forKey: "forceOnboarding"))")
                     
                     // Done checking, proceed to show appropriate view
                     isCheckingSubscription = false
@@ -71,14 +66,11 @@ struct ContentView: View {
                             forceShowOnboarding = false // Only force once per launch
                         } else {
                             // Check subscription status to determine onboarding
-                            let shouldShowOnboarding = !hasCompletedOnboarding && !subscriptionManager.isSubscribed
-                            print("DEBUG ContentView: shouldShowOnboarding = \(shouldShowOnboarding) (hasCompleted: \(hasCompletedOnboarding), isSubscribed: \(subscriptionManager.isSubscribed))")
-                            showingOnboarding = shouldShowOnboarding
+                            showingOnboarding = !hasCompletedOnboarding && !subscriptionManager.isSubscribed
                         }
                         #else
                         // Normal production behavior
-                        let shouldShowOnboarding = !hasCompletedOnboarding && !subscriptionManager.isSubscribed
-                        showingOnboarding = shouldShowOnboarding
+                        showingOnboarding = !hasCompletedOnboarding && !subscriptionManager.isSubscribed
                         #endif
                     }
                     .fullScreenCover(isPresented: $showingOnboarding) {

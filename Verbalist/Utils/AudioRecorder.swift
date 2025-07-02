@@ -33,9 +33,7 @@ class AudioRecorder: NSObject, ObservableObject, AVAudioRecorderDelegate {
         do {
             try recordingSession?.setCategory(.playAndRecord, mode: .default, options: [.defaultToSpeaker])
             try recordingSession?.setActive(true)
-            print("Audio session set up successfully")
         } catch {
-            print("Failed to set up recording session: \(error.localizedDescription)")
         }
         #endif
     }
@@ -45,14 +43,11 @@ class AudioRecorder: NSObject, ObservableObject, AVAudioRecorderDelegate {
             #if os(iOS)
             switch AVAudioSession.sharedInstance().recordPermission {
             case .granted:
-                print("Microphone permission already granted")
                 continuation.resume(returning: true)
             case .denied:
-                print("Microphone permission denied")
                 continuation.resume(returning: false)
             case .undetermined:
                 AVAudioSession.sharedInstance().requestRecordPermission { granted in
-                    print("Microphone permission \(granted ? "granted" : "denied")")
                     continuation.resume(returning: granted)
                 }
             @unknown default:
@@ -68,7 +63,6 @@ class AudioRecorder: NSObject, ObservableObject, AVAudioRecorderDelegate {
     }
     
     func startRecording() {
-        print("Starting recording...")
         
         // Set up audio session specifically for recording
         #if os(iOS)
@@ -76,9 +70,7 @@ class AudioRecorder: NSObject, ObservableObject, AVAudioRecorderDelegate {
             let audioSession = AVAudioSession.sharedInstance()
             try audioSession.setCategory(.record, mode: .measurement, options: [])
             try audioSession.setActive(true)
-            print("Audio session configured for recording")
         } catch {
-            print("Failed to configure audio session: \(error)")
             return
         }
         #endif
@@ -102,12 +94,10 @@ class AudioRecorder: NSObject, ObservableObject, AVAudioRecorderDelegate {
             audioRecorder?.isMeteringEnabled = true
             
             guard let recorder = audioRecorder else {
-                print("Failed to create audio recorder")
                 return
             }
             
             let started = recorder.record()
-            print("Recording started: \(started)")
             
             if started {
                 isRecording = true
@@ -123,10 +113,6 @@ class AudioRecorder: NSObject, ObservableObject, AVAudioRecorderDelegate {
                     let avgPower = recorder.averagePower(forChannel: 0)
                     let peakPower = recorder.peakPower(forChannel: 0)
                     
-                    // Reduce logging for performance
-                    if Int.random(in: 0...20) == 0 {  // Only log occasionally 
-                        print("Audio levels - Avg: \(avgPower), Peak: \(peakPower)")
-                    }
                     
                     // Generate multiple samples for a more interesting visualization
                     var newSamples = [Float]()
@@ -169,7 +155,6 @@ class AudioRecorder: NSObject, ObservableObject, AVAudioRecorderDelegate {
             }
             
         } catch {
-            print("Could not start recording: \(error.localizedDescription)")
             stopRecording()
         }
     }
@@ -188,14 +173,12 @@ class AudioRecorder: NSObject, ObservableObject, AVAudioRecorderDelegate {
         do {
             return try Data(contentsOf: url)
         } catch {
-            print("Error reading audio file: \(error.localizedDescription)")
             return nil
         }
     }
     
     func audioRecorderDidFinishRecording(_ recorder: AVAudioRecorder, successfully flag: Bool) {
         if !flag {
-            print("Recording finished unsuccessfully")
             stopRecording()
         }
     }

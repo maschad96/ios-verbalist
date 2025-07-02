@@ -29,10 +29,8 @@ class SecureKeyManager {
             // Load encrypted data from bundle
             guard let encryptedData = loadEncryptedAPIKey() else {
                 #if DEBUG
-                print("WARNING: Encrypted API key file not found")
                 return "sk-xxxx" // Development fallback
                 #else
-                print("ERROR: Encrypted API key file not found")
                 return ""
                 #endif
             }
@@ -46,10 +44,8 @@ class SecureKeyManager {
             
         } catch {
             #if DEBUG
-            print("WARNING: Failed to decrypt API key: \(error)")
             return "sk-xxxx" // Development fallback
             #else
-            print("ERROR: Failed to decrypt API key: \(error)")
             return ""
             #endif
         }
@@ -67,10 +63,8 @@ class SecureKeyManager {
             // Load encrypted data from bundle
             guard let encryptedData = loadEncryptedAPIKey() else {
                 #if DEBUG
-                print("WARNING: Encrypted API key file not found")
                 return "gsk-xxxx" // Development fallback
                 #else
-                print("ERROR: Encrypted API key file not found")
                 return ""
                 #endif
             }
@@ -84,10 +78,8 @@ class SecureKeyManager {
             
         } catch {
             #if DEBUG
-            print("WARNING: Failed to decrypt API key: \(error)")
             return "gsk-xxxx" // Development fallback
             #else
-            print("ERROR: Failed to decrypt API key: \(error)")
             return ""
             #endif
         }
@@ -118,18 +110,6 @@ class SecureKeyManager {
             }
         }
         
-        #if DEBUG
-        print("DEBUG: Could not locate encrypted_api_key.dat in bundle")
-        if let resourcePath = Bundle.main.resourcePath {
-            print("DEBUG: Bundle resource path: \(resourcePath)")
-            do {
-                let contents = try FileManager.default.contentsOfDirectory(atPath: resourcePath)
-                print("DEBUG: Bundle contents: \(contents)")
-            } catch {
-                print("DEBUG: Could not list bundle contents: \(error)")
-            }
-        }
-        #endif
         
         return nil
     }

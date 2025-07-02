@@ -155,18 +155,15 @@ class SettingsViewModel: ObservableObject {
         
         // Get current models
         let currentModels = aiService.getCurrentModels()
-        print("Current models from service - LLM: \(currentModels.llm), Whisper: \(currentModels.whisper)")
         
         // Ensure the current model is in the available models list
         if !self.llmModels.contains(currentModels.llm) {
-            print("Warning: Current LLM model \(currentModels.llm) not in available models list")
             self.selectedLLMModel = self.llmModels.first ?? "llama3-8b-8192"
         } else {
             self.selectedLLMModel = currentModels.llm
         }
         
         if !self.whisperModels.contains(currentModels.whisper) {
-            print("Warning: Current Whisper model \(currentModels.whisper) not in available models list")
             self.selectedWhisperModel = self.whisperModels.first ?? "whisper-large-v3"
         } else {
             self.selectedWhisperModel = currentModels.whisper
@@ -176,7 +173,6 @@ class SettingsViewModel: ObservableObject {
         let groqKey = SecureKeyManager.shared.getGroqKey()
         self.hasGroqKey = !groqKey.isEmpty && groqKey != "gsk-xxxx"
         
-        print("SettingsViewModel initialized with LLM: \(self.selectedLLMModel), Whisper: \(self.selectedWhisperModel)")
     }
 }
 
