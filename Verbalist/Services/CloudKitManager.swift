@@ -67,8 +67,9 @@ class CloudKitManager {
                 switch result {
                 case .success(let record):
                     records.append(record)
-                case .failure(let error):
-                    // Handle individual record fetch error
+                case .failure(_):
+                    // Handle individual record fetch error silently
+                    break
                 }
             }
             
